@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Watch | Rikuuya Phubs Corner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#38bdf8', // Tailwind sky-400
+            dark: '#0f172a'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-black via-zinc-900 to-gray-800 min-h-screen text-white font-sans">
+
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <a href="/" class="inline-block mb-6 text-sm text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded transition">← Back</a>
+
+    <h2 id="title" class="text-2xl font-semibold text-accent mb-4 truncate"></h2>
+
+    <div class="rounded-xl overflow-hidden shadow-xl bg-black/20 backdrop-blur-md border border-white/10">
+      <video id="vid" controls class="w-full aspect-video object-contain"></video>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
+      <select id="qsel" class="bg-zinc-800 text-white border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+        <option selected disabled>Choose quality</option>
+      </select>
+      <a id="dl" href="#" class="px-4 py-2 bg-accent text-black font-semibold rounded hover:brightness-110 transition text-sm">Download</a>
+    </div>
+  </div>
+
+  <script>
+    function qs(k) {
+      return new URLSearchParams(location.search).get(k)
+    }
+
+    async function init() {
+      const rawTitle = qs('title')
+      if (!rawTitle) return location.href = '/'
+      const decoded = decodeURIComponent(rawTitle)
+
+      const res = await fetch('/api/videos')
+      const list = await res.json()
+      const item = list.find(x => x.title === decoded)
+      if (!item) return location.href = '/'
+
+      document.getElementById('title').textContent = item.title
+      const vid = document.getElementById('vid')
+      const sel = document.getElementById('qsel')
+
+      item.variants.forEach(v => {
+        const o = document.createElement('option')
+        o.value = v.id
+        o.textContent = v.quality
+        sel.appendChild(o)
+      })
+
+      function setSrc(id) {
+        const cur = vid.currentTime
+        vid.src = '/api/stream/' + id
+        document.getElementById('dl').href = '/api/download/' + id
+        vid.onloadedmetadata = () => vid.currentTime = cur
+      }
+
+      setSrc(item.variants[0].id)
+      sel.addEventListener('change', e => setSrc(e.target.value))
+    }
+
+    init()
+  </script>
+</body>
+</html>
